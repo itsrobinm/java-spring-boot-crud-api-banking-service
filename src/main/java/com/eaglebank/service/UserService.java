@@ -2,6 +2,7 @@ package com.eaglebank.service;
 
 import com.eaglebank.dto.UserDTO;
 import com.eaglebank.exception.UserNotFoundException;
+import com.eaglebank.exception.AccessDeniedException;
 import com.eaglebank.model.Address;
 import com.eaglebank.model.User;
 import com.eaglebank.repository.UserRepository;
@@ -22,7 +23,10 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public UserDTO getUserById(String userId) {
+    public UserDTO getUserById(String requesterId, String userId) {
+        if (!userId.equals(requesterId)) {
+            throw new AccessDeniedException(requesterId, userId);
+        }
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
         return user.toDTO();
     }
@@ -46,7 +50,6 @@ public class UserService {
         user.setId(id);
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
-        // map new fields
         user.setAddress(Address.fromDTO(dto.getAddress()));
         user.setPhoneNumber(dto.getPhoneNumber());
 
@@ -54,11 +57,14 @@ public class UserService {
         return new UserDTO(saved.getId(), saved.getName(), saved.getEmail(), saved.getAddress() != null ? saved.getAddress().toDTO() : null, saved.getPhoneNumber());
     }
 
-    public UserDTO patchUser(String userId, UserDTO userDTO) {
+    public UserDTO patchUser(String requesterId, String userId, UserDTO userDTO) {
+        if (!userId.equals(requesterId)) {
+            throw new AccessDeniedException(requesterId, userId);
+        }
+
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
-        // Only update fields that are non-null in the DTO
         if (userDTO.getName() != null) {
             existingUser.setName(userDTO.getName());
         }
@@ -70,7 +76,6 @@ public class UserService {
         }
 
         if (userDTO.getAddress() != null) {
-            // merge address fields to avoid overwriting unspecified subfields with nulls
             Address existingAddress = existingUser.getAddress();
             if (existingAddress == null) {
                 existingAddress = new Address();
@@ -90,7 +95,11 @@ public class UserService {
     }
 
 
-    public void deleteUser(String userId) {
+    public void deleteUser(String requesterId, String userId) {
+        if (!userId.equals(requesterId)) {
+            throw new AccessDeniedException(requesterId, userId);
+        }
+
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 

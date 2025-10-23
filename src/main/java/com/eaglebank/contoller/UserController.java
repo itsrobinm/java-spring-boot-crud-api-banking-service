@@ -22,7 +22,6 @@ public class UserController {
         if (!userId.equals(userIdHeader)) {
             throw new AccessDeniedException(userIdHeader, userId);
         }
-        // pass the requester id to the service for defense-in-depth
         return userService.getUserById(userIdHeader, userId);
     }
 
@@ -35,11 +34,9 @@ public class UserController {
     @DeleteMapping("/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@RequestHeader("user-id") String userIdHeader, @PathVariable String userId) {
-        // forward the requester id to the service which enforces owner equality
         userService.deleteUser(userIdHeader, userId);
     }
 
-    //add a patch mapping to update user partially
     @PatchMapping("/{userId}")
     public UserDTO patchUser(
             @RequestHeader("user-id") String userIdHeader,
@@ -48,7 +45,6 @@ public class UserController {
         if (!userId.equals(userIdHeader)) {
             throw new AccessDeniedException(userIdHeader, userId);
         }
-        // pass requester id to service as well
         return userService.patchUser(userIdHeader, userId, userDTO);
     }
 }

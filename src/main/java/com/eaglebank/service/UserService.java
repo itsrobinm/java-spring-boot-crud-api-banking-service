@@ -23,7 +23,6 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    // Note: requesterId is the value from the user-id header; service enforces requester == target user
     public UserDTO getUserById(String requesterId, String userId) {
         if (!userId.equals(requesterId)) {
             throw new AccessDeniedException(requesterId, userId);
@@ -51,7 +50,6 @@ public class UserService {
         user.setId(id);
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
-        // map new fields
         user.setAddress(Address.fromDTO(dto.getAddress()));
         user.setPhoneNumber(dto.getPhoneNumber());
 
@@ -59,7 +57,6 @@ public class UserService {
         return new UserDTO(saved.getId(), saved.getName(), saved.getEmail(), saved.getAddress() != null ? saved.getAddress().toDTO() : null, saved.getPhoneNumber());
     }
 
-    // patch now requires requesterId and enforces the same-owner rule
     public UserDTO patchUser(String requesterId, String userId, UserDTO userDTO) {
         if (!userId.equals(requesterId)) {
             throw new AccessDeniedException(requesterId, userId);
@@ -68,7 +65,6 @@ public class UserService {
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
-        // Only update fields that are non-null in the DTO
         if (userDTO.getName() != null) {
             existingUser.setName(userDTO.getName());
         }
@@ -80,7 +76,6 @@ public class UserService {
         }
 
         if (userDTO.getAddress() != null) {
-            // merge address fields to avoid overwriting unspecified subfields with nulls
             Address existingAddress = existingUser.getAddress();
             if (existingAddress == null) {
                 existingAddress = new Address();
@@ -100,7 +95,6 @@ public class UserService {
     }
 
 
-    // Change deleteUser to require requesterId and enforce owner equality
     public void deleteUser(String requesterId, String userId) {
         if (!userId.equals(requesterId)) {
             throw new AccessDeniedException(requesterId, userId);

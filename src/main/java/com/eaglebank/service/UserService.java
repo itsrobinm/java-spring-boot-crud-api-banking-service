@@ -2,6 +2,7 @@ package com.eaglebank.service;
 
 import com.eaglebank.dto.UserDTO;
 import com.eaglebank.exception.UserNotFoundException;
+import com.eaglebank.exception.AccessDeniedException;
 import com.eaglebank.model.Address;
 import com.eaglebank.model.User;
 import com.eaglebank.repository.UserRepository;
@@ -22,7 +23,11 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public UserDTO getUserById(String userId) {
+    // Note: requesterId is the value from the user-id header; service enforces requester == target user
+    public UserDTO getUserById(String requesterId, String userId) {
+        if (!userId.equals(requesterId)) {
+            throw new AccessDeniedException(requesterId, userId);
+        }
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
         return user.toDTO();
     }
@@ -54,7 +59,12 @@ public class UserService {
         return new UserDTO(saved.getId(), saved.getName(), saved.getEmail(), saved.getAddress() != null ? saved.getAddress().toDTO() : null, saved.getPhoneNumber());
     }
 
-    public UserDTO patchUser(String userId, UserDTO userDTO) {
+    // patch now requires requesterId and enforces the same-owner rule
+    public UserDTO patchUser(String requesterId, String userId, UserDTO userDTO) {
+        if (!userId.equals(requesterId)) {
+            throw new AccessDeniedException(requesterId, userId);
+        }
+
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
@@ -90,7 +100,12 @@ public class UserService {
     }
 
 
-    public void deleteUser(String userId) {
+    // Change deleteUser to require requesterId and enforce owner equality
+    public void deleteUser(String requesterId, String userId) {
+        if (!userId.equals(requesterId)) {
+            throw new AccessDeniedException(requesterId, userId);
+        }
+
         User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 

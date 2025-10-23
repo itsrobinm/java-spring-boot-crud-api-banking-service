@@ -1,6 +1,7 @@
 package com.eaglebank.contoller;
 
 import com.eaglebank.dto.AccountDTO;
+import com.eaglebank.exception.AccessDeniedException;
 import com.eaglebank.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -23,7 +24,12 @@ public class AccountController {
     }
 
     @GetMapping("/{accountId}")
-    public AccountDTO getAccountById(@PathVariable("accountId") String accountId) {
-        return accountService.getAccountById(accountId);
+    public AccountDTO getAccountById(@RequestHeader("user-id") String userId, @PathVariable("accountId") String accountId) {
+        // only allow a user to fetch their own account
+        if (!accountId.equals(userId)) {
+            throw new AccessDeniedException(userId, accountId);
+        }
+        AccountDTO accountDTO = accountService.getAccountById(accountId);
+        return accountDTO;
     }
 }

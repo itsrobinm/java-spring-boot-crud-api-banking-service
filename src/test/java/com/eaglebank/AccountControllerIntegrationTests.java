@@ -79,7 +79,8 @@ public class AccountControllerIntegrationTests {
         JsonNode created = objectMapper.readTree(createResult);
 
         // now fetch by the account id (which is the user-id header used when creating)
-        String getResult = mockMvc.perform(get("/v1/accounts/usr-get01"))
+        String getResult = mockMvc.perform(get("/v1/accounts/usr-get01")
+                        .header("user-id", "usr-get01"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -88,5 +89,25 @@ public class AccountControllerIntegrationTests {
         assertThat(fetched.get("sortCode").asText()).isEqualTo(created.get("sortCode").asText());
         assertThat(fetched.get("name").asText()).isEqualTo("Fetchable Account");
         assertThat(fetched.get("accountType").asText()).isEqualTo("personal");
+    }
+
+    @Test
+    public void getAccount_mismatchedUserId_returnsForbidden() throws Exception {
+        // create an account first with known user-id
+        String payload = "{\n" +
+                "  \"name\": \"Private Account\",\n" +
+                "  \"accountType\": \"personal\"\n" +
+                "}";
+
+        mockMvc.perform(post("/v1/accounts")
+                        .header("user-id", "usr-pvt01")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated());
+
+        // attempt to fetch with a different valid user-id header (mismatch)
+        mockMvc.perform(get("/v1/accounts/usr-pvt01")
+                        .header("user-id", "usr-oth01"))
+                .andExpect(status().isForbidden());
     }
 }
